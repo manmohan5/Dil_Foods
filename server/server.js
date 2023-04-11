@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const session = require('express-session');
 require('dotenv').config();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -8,6 +9,7 @@ const auth = require("./middleware/auth");
 const errorHandler = require("./middleware/errorHandler");
 const  productRoute =  require('./routers/productRouter');
 const  UserRoute =  require('./routers/userRouter');
+const  authRoute =  require('./routers/authRouter');
 
 
 const app = express();
@@ -34,6 +36,16 @@ app.use(bodyParser.raw({ type: "application/vnd.custom-type" }));
 
 // parse an HTML body into a string
 app.use(bodyParser.text({ type: "text/html" }));
+
+app.use(session({
+  secret: 'mysecretkey',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+      secure: false,
+      maxAge: 3600000 // 1 hour
+  }
+}));
 
 // auth.authenticateToken.unless = unless;
 // app.use(auth.authenticateToken.unless({
@@ -68,7 +80,8 @@ app.use(express.json());
 // Register a new user
 
 app.use('/products', auth.authenticateToken, productRoute);
-app.use('/users', UserRoute);
+app.use('/users', auth.authenticateToken, UserRoute);
+app.use('/auth', authRoute);
 
 
 app.use("*", (req, res) => res.status(404).send("invalid url"));

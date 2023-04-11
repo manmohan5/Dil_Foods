@@ -2,8 +2,19 @@
 import React, { useEffect, useState } from "react";
 import moment from "moment";
 import { useDispatch, useSelector } from "react-redux";
-import { getProducts } from "./redux/actions";
-import { Table, Tag, Button, Badge, Tooltip, Drawer, InputNumber, Row } from "antd";
+import { getProducts, getOTP, verifyOtp } from "./redux/actions";
+import OtpInput from "react-otp-input";
+import {
+  Table,
+  Tag,
+  Button,
+  Badge,
+  Tooltip,
+  Drawer,
+  InputNumber,
+  Row,
+  Modal,
+} from "antd";
 import { PageHeader } from "@ant-design/pro-layout";
 import {
   ShoppingCartOutlined,
@@ -20,8 +31,10 @@ const Product = () => {
   }, []);
 
   const [productsCartData, setProductsCartData] = useState(new Map());
-
+  const [openOtpModal, setOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
   const [isCartVisible, setCartVisible] = useState(false);
+
   const addToCart = (e, id, record) => {
     e.stopPropagation();
     setProductsCartData((prevState) => {
@@ -57,6 +70,28 @@ const Product = () => {
       newState.clear();
       return newState;
     });
+  };
+
+  const getOtP = () => {
+    setOtpModal(true);
+    dispatch(getOTP());
+  };
+
+  const handleOk = async () => {
+    const payload = {};
+    const items = [];
+    productsCartData.forEach((value) => {
+      items.push({
+        name: value.name,
+        product: value.id,
+        price: value.price,
+        quantity: value.qty,
+      });
+    });
+    payload.items = items;
+    payload.otp = otp;
+   await  dispatch(verifyOtp(payload));
+   setOtpModal(false);
   };
 
   const columns = [
@@ -140,13 +175,18 @@ const Product = () => {
       render: (text) => `₹ ${text.toLocaleString("en-in")}`,
     },
     {
-        title: "Quantitiy",
-        key: "qty",
-        dataIndex: "qty",
-        width: "15%",
-        className: "numeric-column",
-        render: (text, record) => <InputNumber value={text} onChange={quantity => updateQuantity(quantity, record.key, record, )} />,
-      },
+      title: "Quantitiy",
+      key: "qty",
+      dataIndex: "qty",
+      width: "15%",
+      className: "numeric-column",
+      render: (text, record) => (
+        <InputNumber
+          value={text}
+          onChange={(quantity) => updateQuantity(quantity, record.key, record)}
+        />
+      ),
+    },
     {
       title: "Actions",
       key: "actions",
@@ -164,14 +204,14 @@ const Product = () => {
               margin: "0px 10px",
             }}
             type="link"
-            onClick={(e) => removeFromCart(e,record.id)}
+            onClick={(e) => removeFromCart(e, record.id)}
             icon={<CloseCircleOutlined />}
           />
         );
       },
     },
   ];
-  const rows = productsReducer.products.map((pr) => ({
+  const rows = (productsReducer.products || []).map((pr) => ({
     name: pr.name,
     brand: pr.company,
     id: pr._id,
@@ -192,7 +232,6 @@ const Product = () => {
     });
   });
 
-  console.log("cartRows",cartRows)
   return (
     <div>
       <PageHeader
@@ -226,7 +265,7 @@ const Product = () => {
           placement="right"
           closable
           open
-          onClose={() =>  setCartVisible(false)}
+          onClose={() => setCartVisible(false)}
           zIndex={1001}
           width={500}
         >
@@ -236,17 +275,60 @@ const Product = () => {
             dataSource={cartRows}
             pagination={false}
           />
-            <div style={{ width: '90%', marginBottom: '10px', bottom: '10px', position: 'fixed' }}>
-            {' '}
+          <div
+            style={{
+              width: "90%",
+              marginBottom: "10px",
+              bottom: "10px",
+              position: "fixed",
+            }}
+          >
+            {" "}
             <Row>
-              <Button danger onClick={(e) => clearCart(e)} ghost style={{ marginRight: '8px' }}>
+              <Button
+                danger
+                onClick={(e) => clearCart(e)}
+                ghost
+                style={{ marginRight: "8px" }}
+              >
                 Clear Cart
               </Button>
-              <Button type="primary">
+              <Button type="primary" onClick={() => getOtP()}>
                 Place Order
               </Button>
             </Row>
           </div>
+          {openOtpModal && (
+            <Modal
+              onOk={handleOk}
+              zIndex={100001}
+              open
+              onCancel={() => setOtpModal(false)}
+              okText="Place Order"
+              okButtonProps={{ loading: productsReducer.otpLoader }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 10 }}>
+                  <strong>Enter Verification Code</strong>
+                </div>
+                <OtpInput
+                  value={otp}
+                  onChange={setOtp}
+                  inputStyle={{ height: 35, width: 35, borderRadius: "20%" }}
+                  numInputs={5}
+                  renderSeparator={<span>-</span>}
+                  renderInput={(props) => <input {...props} />}
+                />
+              </div>
+            </Modal>
+          )}
         </Drawer>
       )}
     </div>

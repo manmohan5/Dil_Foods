@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import "./App.css";
+import { useLocation } from 'react-router-dom';
+
 import { Layout, Menu, theme } from "antd";
 import routes from "./routes";
 import "antd/dist/reset.css";
@@ -8,11 +10,11 @@ import "antd/dist/reset.css";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UploadOutlined,
-  UserOutlined,
-  VideoCameraOutlined,
+  MenuOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
 import { Content } from "antd/es/layout/layout";
+import NormalLoginForm from "./Login";
 
 const { Header, Sider } = Layout;
 
@@ -31,6 +33,13 @@ const App = () => {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  const location = useLocation();
+
+  console.log("lll", location)
+if(location.pathname === '/login') {
+  return <NormalLoginForm  />
+}
+
   return (
     <Layout style={style}>
       <Sider trigger={null} collapsible collapsed={collapsed}>
@@ -42,23 +51,18 @@ const App = () => {
           onClick={(obj) => { if(obj.key === '1') {
             navigate('/products')
           } else if (obj.key === '2') {
-            navigate('/')
+            navigate('/my-orders')
           }  } }
           items={[
             {
               key: "1",
-              icon: <UserOutlined />,
-              label: "Products",
+              icon: <MenuOutlined />,
+              label: "Menu",
             },
             {
               key: "2",
-              icon: <VideoCameraOutlined />,
-              label: "nav 2",
-            },
-            {
-              key: "3",
-              icon: <UploadOutlined />,
-              label: "nav 3",
+              icon: <ShopOutlined />,
+              label: "My Orders",
             },
           ]}
         />

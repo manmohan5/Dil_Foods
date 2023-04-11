@@ -3,9 +3,11 @@ const User = require("../models/User");
 const Otp = require("../models/Otp");
 const order = require("../models/Order");
 const item = require("../models/Item");
+const user = require("../models/User");
 const bcrypt = require("bcrypt");
 const auth = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
+const _ = require("lodash");  
 
 function makeid(length) {
   let result = "";
@@ -20,7 +22,6 @@ function makeid(length) {
   return result;
 }
 
-console.log(makeid(5));
 
 userService.register = async (options, res) => {
   try {
@@ -50,9 +51,8 @@ userService.register = async (options, res) => {
   }
 };
 
-userService.login = async (options, res) => {
+userService.login = async (options, req, res) => {
   const user = await User.findOne({ email: options.email });
-  console.log("user", user);
   if (!user) {
     return res.status(401).json({ message: "Invalid email or password" });
   }
@@ -61,7 +61,8 @@ userService.login = async (options, res) => {
     return res.status(401).json({ message: "Invalid email or password" });
   }
   const token = jwt.sign({ email: options.email }, "foodlab");
-  return res.status(200).json({ token });
+  req.session.userId = user._id;
+  return res.status(200).json({ token, user });
 };
 
 userService.generateOtp = async (res) => {
@@ -82,7 +83,7 @@ userService.generateOtp = async (res) => {
       const savePromise = newotp.save();
       savePromise
         .then(() => {
-          res.status(201).json({ message: "otp send successfully" });
+          res.status(200).json({ message: "otp send successfully" });
         })
         .catch((err) => {
           console.error(err);
@@ -116,7 +117,7 @@ userService.placeOrder = async (values, res) => {
           );
           savePromise
             .then(() => {
-              res.status(201).json({ message: "Order placed Successfully" });
+              res.status(200).json({ message: "Order placed Successfully" });
             })
             .catch((err) => {
               console.error(err);
@@ -144,25 +145,19 @@ userService.verifyOtp = async (values, res) => {
 };
 
 userService.findAllOrderForListing = async (res) => {
-  // console.log("aaaaa");
   const query = order
     .find()
     .populate("items")
     .populate("items.product");
-
   const docs = await query.exec();
-
   res.status(200).json({ data: docs });
+};
 
-  // const query =  order.find()
-  //   .populate("items") // populate the `items` field with the `Item` model
-  //   .populate("items.products")
-  // try {
-  //   const docs = await query.exec();
-  //   res.status(401).json({ data: docs });
-  // } catch (err) {
-  //   console.error(err);
-  // }
+
+userService.profile = async (res, req) => {
+  const { userId }  = req.session
+  const user = await User.findOne({ id: userId });
+  res.status(200).json({ data: user });
 };
 
 module.exports = userService;
