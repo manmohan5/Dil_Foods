@@ -5,15 +5,23 @@ import { Navigate } from "react-router-dom";
 import axios from "axios";
 import { errorMessage, successMessage, warningMessage } from "../utils";
 
+
 const instance = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json; charset=utf-8",
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
   },
   validateStatus: (status) => status === 200,
-  // paramsSerializer: params => Qs.stringify(params, { arrayFormat: 'repeat' }),
 });
+
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 
 const makeAPIRequest =
   (fn, ...args) =>
@@ -51,7 +59,8 @@ const makeAPIRequest =
   };
 
 const newGetFromAPI = (url, params = {}, headers) => {
-  return instance.get(url, { params }, headers);
+  console.log("localStorage.getItem('token')",localStorage.getItem('token'))
+  return instance.get(url, { params });
 };
 
 const newPostToAPI = (url, data = {}) => {
@@ -68,6 +77,11 @@ const verifyOTPAPI = (data) =>
   newPostToAPI("http://localhost:8008/users/verify-otp", data);
 const profileAPI = (params, headers) =>
   newGetFromAPI("http://localhost:8008/users/profile", params, headers);
+  const logInAPI = (data) =>
+  newPostToAPI("http://localhost:8008/auth/login", data);
+
+  const registerAPI = (data) =>
+  newPostToAPI("http://localhost:8008/auth/register", data);
 
 export function getProducts(params) {
   return (dispatch) => {
@@ -95,13 +109,16 @@ export function getOTP(params) {
   };
 }
 
-export function verifyOtp(data) {
+export function verifyOtp(data,callback) {
   return (dispatch) => {
     dispatch({ type: type.VERIFY_OTP });
     dispatch(makeAPIRequest(verifyOTPAPI, data)).then((response) => {
       dispatch({ type: type.VERIFY_OTP_SUCCESS });
-      getProducts(getProducts());
+      dispatch(getProducts());
       successMessage("order place successfully");
+      if(callback) {
+        callback();
+      }
     });
   };
 }
@@ -113,8 +130,34 @@ export function getProfile() {
       makeAPIRequest(profileAPI)
     ).then((response) => {
       dispatch({ type: "STORE_AUTH", data: response.data.data });
-      localStorage.setItem(`${response.data.data.id}`, JSON.stringify(response.data.data));
-      localStorage.setItem('latestProfileToken', response.data.data.token);
+    });
+  };
+}
+
+
+export function login(payload, callback) {
+  return (dispatch) => {
+    dispatch({ type: "GET_LOGIN" });
+    dispatch(
+      makeAPIRequest(logInAPI, payload)
+    ).then((response) => {
+      dispatch({ type: "GET_LOGIN_SUCCESS" });
+      localStorage.setItem('token', response.data.token);
+      dispatch(getProfile())
+      if(callback) {
+        callback();
+      }
+    });
+  };
+}
+
+export function register(payload, callback) {
+  return (dispatch) => {
+    dispatch({ type: "GET_REGISTER" });
+    dispatch(
+      makeAPIRequest(registerAPI, payload)
+    ).then((response) => {
+      dispatch({ type: "GET_REGISTER_SUCCESS" });
     });
   };
 }

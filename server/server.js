@@ -36,14 +36,14 @@ app.use(bodyParser.raw({ type: "application/vnd.custom-type" }));
 
 // parse an HTML body into a string
 app.use(bodyParser.text({ type: "text/html" }));
-
+const oneDay = 1000 * 60 * 60 * 24;
 app.use(session({
   secret: 'mysecretkey',
   resave: false,
   saveUninitialized: true,
   cookie: {
       secure: false,
-      maxAge: 3600000 // 1 hour
+      maxAge: oneDay // 1 hour
   }
 }));
 

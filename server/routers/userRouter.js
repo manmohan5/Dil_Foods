@@ -14,7 +14,8 @@ router.post("/place-order", (req, res, next) => {
 });
 
 router.get("/generate-otp", (req, res, next) => {
-  return userService.generateOtp(res);
+  const options = req.query;
+  return userService.generateOtp(options,res);
 });
 
 

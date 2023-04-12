@@ -1,12 +1,37 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./index.css";
 import { Form, Input, Button, Checkbox, Layout } from "antd";
 import { UserOutlined, LockOutlined, PhoneOutlined } from "@ant-design/icons";
 import { Content } from "antd/es/layout/layout";
 
+import { useNavigate } from "react-router-dom";
+import { login, register } from "./redux/actions";
+import { useDispatch, useSelector } from "react-redux";
+
+
 const NormalLoginForm = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const authReducer = useSelector((state) => state.authReducer);
+
+
+const navigateRoute = () => {
+  navigate("/products");
+}
+
   const onFinish = (values) => {
-    console.log("Received values of form: ", values);
+    const payload = {};
+    if(isRegister) {
+      payload.email =  values.email;
+      payload.password =  values.password;
+      payload.name =  values.name;
+      payload.phone =  values.phone;
+      dispatch(register(payload));
+    } else {
+      payload.email =  values.email;
+      payload.password =  values.password;
+      dispatch(login(payload, navigateRoute));
+    }
   };
 
   const [isRegister, setIsRegister ]  = useState(false)
@@ -39,7 +64,7 @@ const NormalLoginForm = () => {
             >
                     {isRegister && <>
                 <Form.Item
-                name="Name"
+                name="name"
                 rules={[
                   {
                     required: true,
@@ -102,6 +127,7 @@ const NormalLoginForm = () => {
                   type="primary"
                   htmlType="submit"
                   className="login-form-button"
+                  loading={authReducer.registerLoader || authReducer.loginLoader}
                 >
                   { isRegister ? "register" : "Log in"}
                 </Button>

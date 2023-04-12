@@ -1,7 +1,9 @@
 const productInitialState = {
   loading: true,
   isLoggedIn: false,
-  ueserData: {},
+  userData: {},
+  loginLoader: false,
+  registerLoader: false,
 };
 
 const productReducer = (state = productInitialState, action) => {
@@ -16,13 +18,33 @@ const productReducer = (state = productInitialState, action) => {
         ...state,
         loading: false,
         isLoggedIn: true,
-        ueserData: action.data,
+        userData: action.data,
       };
+      case "GET_LOGIN":
+        return {
+          ...state,
+          loginLoader: true,
+        };
+      case "STORE_LOGIN_SUCCESS":
+        return {
+          ...state,
+          loginLoader: false,
+        };
+        case "GET_REGISTER":
+          return {
+            ...state,
+            registerLoader: true,
+          };
+        case "GET_REGISTER_SUCCESS":
+          return {
+            ...state,
+            registerLoader: false,
+          };
     case "LOGIN_FAILED":
       return {
         ...state,
         loading: false,
-        ueserData: action.data,
+        userData: action.data,
         isLoggedIn: false,
       };
     case "REQUEST_ERROR":

@@ -22,9 +22,13 @@ import {
   PlusCircleTwoTone,
   CloseCircleOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 const Product = () => {
   const dispatch = useDispatch();
   const productsReducer = useSelector((state) => state.products);
+  const authReducer = useSelector((state) => state.authReducer);
+
+  console.log("authReducer",authReducer)
 
   useEffect(() => {
     dispatch(getProducts());
@@ -64,7 +68,7 @@ const Product = () => {
   };
 
   const clearCart = (e) => {
-    e.stopPropagation();
+    // e.stopPropagation();
     setProductsCartData((prevState) => {
       const newState = new Map(prevState);
       newState.clear();
@@ -74,9 +78,19 @@ const Product = () => {
 
   const getOtP = () => {
     setOtpModal(true);
-    dispatch(getOTP());
+    const params = {};
+    params.userId = authReducer.userData.id;
+    dispatch(getOTP(params));
   };
 
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    setCartVisible(false);
+    setOtpModal(false);
+    clearCart();
+    navigate("/products");
+  };
   const handleOk = async () => {
     const payload = {};
     const items = [];
@@ -90,8 +104,7 @@ const Product = () => {
     });
     payload.items = items;
     payload.otp = otp;
-   await  dispatch(verifyOtp(payload));
-   setOtpModal(false);
+    dispatch(verifyOtp(payload, handleClose));
   };
 
   const columns = [

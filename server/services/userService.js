@@ -3,7 +3,6 @@ const User = require("../models/User");
 const Otp = require("../models/Otp");
 const order = require("../models/Order");
 const item = require("../models/Item");
-const user = require("../models/User");
 const bcrypt = require("bcrypt");
 const auth = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
@@ -40,12 +39,8 @@ userService.register = async (options, res) => {
     });
 
     const token = await auth.generateAccessToken(options.email);
-    return {
-      data: {
-        user: result,
-        token,
-      },
-    };
+    return res.status(200).json({ user: result });
+
   } catch (error) {
     return error;
   }
@@ -61,20 +56,26 @@ userService.login = async (options, req, res) => {
     return res.status(401).json({ message: "Invalid email or password" });
   }
   const token = jwt.sign({ email: options.email }, "foodlab");
-  req.session.userId = user._id;
+  const auth = {
+    userId: user._id,
+    id: user.id,
+    phone: user.phone,
+  }
+  req.session.auth = auth;
   return res.status(200).json({ token, user });
 };
 
-userService.generateOtp = async (res) => {
+userService.generateOtp = async (options, res) => {
   const accountSid = process.env.ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const client = require("twilio")(accountSid, authToken);
   const randomnumber = Math.floor(Math.random() * 90000) + 10000;
+  const user = await User.findOne({ _id: options.userId });
   client.messages
     .create({
       body: `your otp is ${randomnumber}`,
       from: "+15076323349",
-      to: "+918630760149",
+      to: `+91${user.phone}`,
     })
     .then(() => {
       const newotp = new Otp({
@@ -99,7 +100,6 @@ userService.placeOrder = async (values, res) => {
   newOrderItem
     .save()
     .then((savedOrderItem) => {
-      console.log(`Saved order item with ID ${savedOrderItem._id}`);
       const items = [];
       values.items.forEach((itm) => {
         items.push({
@@ -110,7 +110,6 @@ userService.placeOrder = async (values, res) => {
       item
         .insertMany(items)
         .then((data) => {
-          console.log("data", data);
           const savePromise = order.findOneAndUpdate(
             { _id: savedOrderItem._id },
             { items: data }

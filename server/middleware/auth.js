@@ -7,7 +7,6 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({
       message: "token not available",
     });
-
   jwt.verify(token, "foodlab", (err, user) => {
     if (err) return res.status(403).json({ message: "Unauthorize login" });
     req.user = user;
